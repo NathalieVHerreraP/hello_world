@@ -1,66 +1,11 @@
 import Nat "mo:base/Nat";
 import Text "mo:base/Text";
 import Bool "mo:base/Bool";
-import Int "mo:base/Int";
-import Float "mo:base/Float";
 import HashMap "mo:base/HashMap";
-import Array "mo:base/Array";
+import Iter "mo:base/Iter";
+import Result "mo:base/Result";
 
 actor {
-  //Dia 2
-  //tipos de datos
-  var myBool : Bool = true;
-  var myInt : Int = 0;
-  var myFloat : Float = 0.00;
-  var age : Nat = 0;
-  var name : Text = "Joe Doe";
-
-  //Query -> lectura -> tarda menos en procesar
-  public func setName(n : Text) : async () {
-    name := n;
-  };
-
-  //Update -> escritura -> tarda mas en procesar
-  public query func getName() : async Text {
-    return name;
-  };
-
-  //Dia 3
-  let name2 : ?Text = ?"OtroNombre";
-  let age2 : ?Nat = null;
-
-  //Arrays
-  let myArray : [Nat] = [1, 2, 8];
-  let arrayElement = myArray[0];
-
-  //Tupla
-  let myTuple : (Nat, Text) = (1, "Algo");
-  let algo : Text = myTuple.1;
-
-  //HashMAp
-  var map = HashMap.HashMap<Text, Nat>(5, Text.equal, Text.hash);
-  let mapSize = map.size();
-  map.put("Ness", 25);
-  map.put("Livy", 23);
-  let ness : ?Nat = map.get("Ness");
-
-  //Record (parecido a un JSON/Objeto)
-  //tipo perosnalizado, como una interfaz en TS
-  type Person = {
-    name : Text;
-    age : Nat;
-  };
-
-  //Crear tipos para usar dentro de otros wow
-  type Professor = {
-    name : Text;
-  };
-
-  type Subject = {
-    name : Text;
-    professors : [Professor];
-  };
-
   type Student = {
     id : Text;
     firstName : Text;
@@ -69,33 +14,61 @@ actor {
     active : Bool;
   };
 
-  var persons = HashMap.HashMap<Text, Person>(2, Text.equal, Text.hash);
+  var students = HashMap.HashMap<Text, Student>(5, Text.equal, Text.hash);
 
-  let gerardo : Person = {
-    name = "Gerardo";
-    age = 24;
-  };
-
-  let luis : Person = {
-    name = "Luis";
-    age = 21;
-  };
-
-  persons.put("gerardo", gerardo);
-  persons.put("luis", luis);
-
-  public query func getPerson(name : Text) : async ?Person {
-    return persons.get(name);
-  };
-
-  public func setPerson(index : Text, newName : Text, newAge : Nat) : async () {
-    let newPerson : Person = {
-      name = newName;
-      age = newAge;
+  public func setStudent(nId : Text, nFirstName : Text, nLastName : Text, nAge : Nat, nActive : Bool) : async () {
+    var newStudent : Student = {
+      id = nId;
+      firstName = nFirstName;
+      lastName = nLastName;
+      age = nAge;
+      active = nActive;
     };
-    persons.put(index, newPerson);
+    students.put(nId, newStudent);
   };
 
-  //Dia 4
+  public query func getStudent(id : Text) : async ?Student {
+    return students.get(id);
+  };
+
+  public query func getAllStudents() : async [(Text, Student)] {
+    return Iter.toArray<(Text, Student)>(students.entries());
+  };
+
+  public func updateStudent(eId : Text, eFirstName : Text, eLastName : Text, eAge : Nat, eActive : Bool) : async Result.Result<Text, Text> {
+    var studentExists : ?Student = students.get(eId);
+
+    switch (studentExists) {
+      case (null) {
+        return #err("No existe el alumno");
+      };
+      case (?st) {
+        var editStudent : Student = {
+          id = eId;
+          firstName = eFirstName;
+          lastName = eLastName;
+          age = eAge;
+          active = eActive;
+        };
+
+        ignore students.replace(eId, editStudent);
+        return #ok("Actualizado éxitoso");
+      };
+    };
+  };
+
+  public func deleteStudent(dId : Text) : async Result.Result<Text, Text> {
+    let studentExists : ?Student = students.get(dId);
+
+    switch (studentExists) {
+      case (null) {
+        return #err("No existe el alumno");
+      };
+      case (?st) {
+        students.delete(dId);
+        return #ok("Eliminado éxitoso");
+      };
+    };
+  };
 
 };
